@@ -1,5 +1,7 @@
 const Hydra = require('hydra-synth')
 
+const midi = require('./midi');
+
 
 window.onload = function () {
     document.body.style.margin = 0;
@@ -34,8 +36,43 @@ window.onload = function () {
 //http://malitzincortes.net/
 // sand spirals
 
+function logValues() {
+  console.log(window.values);
+}
+
+let lastVals = {};
+
+function bindTo(knobId, scale, def_, min) {
+  return function() {
+    const vals = window.values;
+    if (!vals) { return def_; }
+    if (vals.cmd == 11 && vals.type == 176 && vals.note == knobId) {
+       // console.log('got it', knobId, vals.velocity * scale);
+        let nextVal = 0;
+        if ((vals.velocity * scale) > (min || 0)) {
+          nextVal = vals.velocity * scale;
+        } else {
+          nextVal = min || 0;
+        }
+        lastVals[knobId] = nextVal;
+        return nextVal;
+    } else {
+      if (lastVals.hasOwnProperty(knobId)) {
+        //console.log(lastVals[knobId]);
+        return lastVals[knobId];
+      }
+    }
+    return def_;
+  }
+}
+
+
 osc(3, 0.01, 0.4)
-.color(1.2,1.2,1.3)
+.color(
+  bindTo(80, 1/127, 1.2),
+  bindTo(81, 1/127, 1.2),
+  bindTo(82, 1/127, 1.3)
+)
 .saturate(0.4)
 .modulateRepeat(osc(2),1, 2, 4, 3)
 .modulateKaleid(osc(12,0.05,0),1)
@@ -48,20 +85,25 @@ osc(3, 0.01, 0.4)
 // by Zach Krall
 // http://zachkrall.online/
 
-osc(10, 0.9, 300)
-.color(0.9, 0.7, 0.1)
+osc(10/*bindTo(83, 10, 10)*/, 0.9, 300)
+//.color(0, 0, 0)
+.color(
+    bindTo(80, 1/127, 0.9),
+    bindTo(81, 1/127, 0.7),
+    bindTo(82, 1/127, 0.1)
+)
 .diff(
-  osc(45, 0.3, 100)
+  osc(bindTo(84, 70/127, 45, 30), 0.3, 100)
   .color(0.9, 0.9, 0.9)
   .rotate(0.18)
-  .pixelate(12)
+  .pixelate(bindTo(83, 12/127, 12, 1))
   .kaleid()
 )
 .scrollX(4)
 .colorama()
 
 .modulate(
-  osc( 100)
+  osc(bindTo(85, 100/127, 100))
 )
 .scale(2)
 .out()
